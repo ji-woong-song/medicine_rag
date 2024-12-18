@@ -1,20 +1,28 @@
+from typing import Callable
+
 from langchain_core.prompts import PromptTemplate
 from langchain_openai import ChatOpenAI
 
 import db
 import format
 import prompts
-
 from config import OPEN_AI_KEY
 
 
-async def get_user_data(patient_id: int)-> [str, str]:
+async def get_user_data(patient_id: int) -> [str, str]:
     medicine_data = await db.get_medicine(patient_id)
     medicine_prompt = format.table_medicine(medicine_data)
     blood_sugar = await db.get_blood_sugur(patient_id)
     blood_sugar_prompt = format.table_blood_sugar(blood_sugar)
     return medicine_prompt, blood_sugar_prompt
 
+
+def get_function_info(func: Callable) -> str:
+    return f"Function name: {func.__name__}\nDocstring: {func.__doc__}"
+
+
+def get_function_name(func: Callable) -> str:
+    return func.__name__
 
 
 class LLMService:
@@ -67,7 +75,6 @@ class LLMService:
         )
         return report.content
 
-
     async def consult_symptoms_and_guidance(self, chat_user_id: int, patient_id: int, concerns: str) -> str:
         """
         Assesses the severity of symptoms based on recent blood sugar, blood pressure and medication list
@@ -92,4 +99,20 @@ class LLMService:
             prompt.format(problem=concerns, medicine=medicine_prompt, blood_sugar=blood_sugar_prompt)
         )
         return report.content
+
+    async def route_prompt(self, chat_user_id: int, patient_id: int, concerns: str) -> Callable:
+        funcs = [self.consult_drug_safety, self.consult_medical_department, self.consult_symptoms_and_guidance]
+        funcs_info = "\n".join([get_function_info(f) for f in funcs])
+        function_map = {f.__name__: f for f in funcs}
+        prompt = PromptTemplate(
+            input_variables=["problem"],
+            template=prompts.router_prompt
+        )
+        response = self.llm.invoke(
+            prompt.format(problem=concerns, funcs_info=funcs_info)
+        )
+        content = response.content
+        print(content)
+        return function_map[f"{content}"]
+
 

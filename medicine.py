@@ -4,8 +4,9 @@ import asyncio
 service = LLMService()
 
 async def main():
-    input = "아스피린 먹어도 돼?"
-    result = await service.consult_drug_safety(1, 1, input)
+    input = "갑자기 머리가 빙글 빙글 도는 것 같은데 어떻게 해야할까?"
+    func = await service.route_prompt(1, 1, input)
+    result = await func(1, 1, input)
     print(result)
 
 
