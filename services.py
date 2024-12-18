@@ -41,7 +41,7 @@ class LLMService:
         report = self.llm.invoke(
             prompt.format(problem=concerns, medicine=medicine_prompt, blood_sugar=blood_sugar_prompt)
         )
-        return report
+        return report.content
 
     async def consult_drug_safety(self, chat_user_id: int, patient_id: int, concerns: str) -> str:
         """
@@ -60,12 +60,12 @@ class LLMService:
 
         prompt = PromptTemplate(
             input_variables=["problem"],
-            template=prompts.recommend_subject_prompt
+            template=prompts.drug_safety.prompt
         )
         report = self.llm.invoke(
             prompt.format(problem=concerns, medicine=medicine_prompt, blood_sugar=blood_sugar_prompt)
         )
-        return report
+        return report.content
 
 
     async def consult_symptoms_and_guidance(self, chat_user_id: int, patient_id: int, concerns: str) -> str:
@@ -91,5 +91,5 @@ class LLMService:
         report = self.llm.invoke(
             prompt.format(problem=concerns, medicine=medicine_prompt, blood_sugar=blood_sugar_prompt)
         )
-        return report
+        return report.content
 
