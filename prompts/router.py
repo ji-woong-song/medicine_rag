@@ -2,7 +2,7 @@ prompt = """
 You are a helpful assistant. 
 Answer the user's concern by determining if a function call is needed.
 If so, return the function name only
-If none of the given function can answer the user's concern, return general_dialogue
+If none of the given function can answer the user's concern, return consult_general
 
 User's concern:
 {problem}

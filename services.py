@@ -100,6 +100,20 @@ class LLMService:
         )
         return report.content
 
+    async def consult_general(self, chat_user_id: int, patient_id: int, concerns: str) -> str:
+        medicine_prompt, blood_sugar_prompt = await get_user_data(patient_id)
+
+        prompt = PromptTemplate(
+            input_variables=["problem"],
+            template=prompts.general_consult
+        )
+
+        report = self.llm.invoke(
+            prompt.format(problem=concerns, medicine=medicine_prompt, blood_sugar=blood_sugar_prompt)
+        )
+        return report.content
+
+
     async def route_prompt(self, chat_user_id: int, patient_id: int, concerns: str) -> Callable:
         funcs = [self.consult_drug_safety, self.consult_medical_department, self.consult_symptoms_and_guidance]
         funcs_info = "\n".join([get_function_info(f) for f in funcs])
