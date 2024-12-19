@@ -92,7 +92,7 @@ class LLMService:
 
         prompt = PromptTemplate(
             input_variables=["problem"],
-            template=prompts.recommend_subject_prompt
+            template=prompts.symptoms_guidance_prompt
         )
 
         report = self.llm.invoke(
