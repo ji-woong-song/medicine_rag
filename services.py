@@ -130,3 +130,4 @@ class LLMService:
         return function_map[f"{content}"]
 
 
+llm_service = LLMService()
