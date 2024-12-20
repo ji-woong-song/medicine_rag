@@ -115,7 +115,7 @@ class LLMService:
 
 
     async def route_prompt(self, chat_user_id: int, patient_id: int, concerns: str) -> Callable:
-        funcs = [self.consult_drug_safety, self.consult_medical_department, self.consult_symptoms_and_guidance]
+        funcs = [self.consult_drug_safety, self.consult_medical_department, self.consult_symptoms_and_guidance, self.consult_general]
         funcs_info = "\n".join([get_function_info(f) for f in funcs])
         function_map = {f.__name__: f for f in funcs}
         prompt = PromptTemplate(
