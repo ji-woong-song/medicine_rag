@@ -20,5 +20,5 @@ async def symptoms_and_guidance_consult(req: UserConsultRequest):
 
 @app.post("/general-consult")
 async def general_consult(req: UserConsultRequest):
-    return await llm_service.route_prompt(req.chat_user_id, req.target_id, req.concern)
+    return await llm_service.general_consult(req.chat_user_id, req.target_id, req.concern)
 

@@ -129,5 +129,9 @@ class LLMService:
         print(content)
         return function_map[f"{content}"]
 
+    async def general_consult(self, chat_user_id: int, patient_id: int, concerns: str) -> str:
+        func = await self.route_prompt(chat_user_id, patient_id, concerns)
+        return await func(chat_user_id, patient_id, concerns)
+
 
 llm_service = LLMService()
