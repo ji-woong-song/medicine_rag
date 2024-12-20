@@ -1,3 +1,4 @@
+import logging
 from typing import Callable
 
 from langchain_core.prompts import PromptTemplate
@@ -105,7 +106,7 @@ class LLMService:
 
         prompt = PromptTemplate(
             input_variables=["problem"],
-            template=prompts.general_consult
+            template=prompts.consult_general_prompt
         )
 
         report = self.llm.invoke(
@@ -126,11 +127,11 @@ class LLMService:
             prompt.format(problem=concerns, funcs_info=funcs_info)
         )
         content = response.content
-        print(content)
         return function_map[f"{content}"]
 
     async def general_consult(self, chat_user_id: int, patient_id: int, concerns: str) -> str:
         func = await self.route_prompt(chat_user_id, patient_id, concerns)
+        logging.log(logging.INFO, f"General consult {func.__name__}")
         return await func(chat_user_id, patient_id, concerns)
 
 
