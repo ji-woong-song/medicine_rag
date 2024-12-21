@@ -84,3 +84,24 @@ async def get_blood_pressure(user_id: int):
         info = [{'measure_type': item[0], 'measure_value': item[1], 'measure_data': item[2]} for item in items]
         return info
 
+
+async def get_food(user_id: int):
+    conn = await get_connection()
+    sql = """
+        SELECT
+            h.key_name AS measure_type,
+            h.key_value AS measure_value,
+            h.registration_date AS measure_date
+        FROM
+            healthcare h
+        WHERE
+            h.user_id = %s
+            AND h.registration_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND CURDATE()
+            AND h.type = 'meal';
+    """
+    async with conn.cursor() as cur:
+        await cur.execute(sql, user_id)
+        items = await cur.fetchall()
+        info = [{'measure_type': item[0], 'measure_value': item[1], 'measure_data': item[2]} for item in items]
+        return info
+
