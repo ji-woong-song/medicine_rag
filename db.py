@@ -105,3 +105,19 @@ async def get_food(user_id: int):
         info = [{'measure_type': item[0], 'measure_value': item[1], 'measure_data': item[2]} for item in items]
         return info
 
+
+async def get_gi(user_id: int):
+    conn = await get_connection()
+    sql = """
+        SELECT
+            g.name AS name,
+            g.giScore as value,
+        FROM
+            gi g
+    """
+    async with conn.cursor() as cur:
+        await cur.execute(sql, user_id)
+        items = await cur.fetchall()
+        info = [{'name': item[0], 'value': item[1]} for item in items]
+        return info
+
