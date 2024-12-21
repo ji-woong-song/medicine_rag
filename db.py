@@ -111,12 +111,12 @@ async def get_gi(user_id: int):
     sql = """
         SELECT
             g.name AS name,
-            g.giScore as value,
+            g.giScore as score
         FROM
             gi g
     """
     async with conn.cursor() as cur:
-        await cur.execute(sql, user_id)
+        await cur.execute(sql)
         items = await cur.fetchall()
         info = [{'name': item[0], 'value': item[1]} for item in items]
         return info

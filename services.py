@@ -125,7 +125,7 @@ class LLMService:
         return await func(chat_user_id, patient_id, concerns)
 
     async def init_variables(self, chat_user_id: int, patient_id: int, concerns: str, current: datetime = datetime.now()) -> dict:
-        medicine_prompt, blood_sugar_prompt = get_user_data(patient_id)
+        medicine_prompt, blood_sugar_prompt = await get_user_data(patient_id)
         current_time = current.strftime("%Y-%m-%d %H:%M:%S")
         return {
             "medicine": medicine_prompt,
@@ -137,8 +137,10 @@ class LLMService:
 
     async def init_variables_with_food(self, chat_user_id: int, patient_id: int, concerns: str, current: datetime = datetime.now()) -> dict:
         variables = await self.init_variables(chat_user_id, patient_id, concerns, current)
-        food_prompt = await db.get_food(patient_id)
-        gi_prompt = await db.get_gi(patient_id)
+        food = await db.get_food(patient_id)
+        food_prompt = format.table_food(food)
+        gi = await db.get_gi(patient_id)
+        gi_prompt = format.table_gi(gi)
         variables["food"] = food_prompt
         variables["gi"] = gi_prompt
         return variables
