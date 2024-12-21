@@ -46,7 +46,8 @@ class LLMService:
         Returns:
             str: The names of recommended medical department with simple explanation and advice for accurate consultation with a doctor
         """
-        report = await self.invoke_with_history(chat_user_id, patient_id, concerns, prompts.recommend_subject_prompt)
+        variables = await self.init_variables(chat_user_id, patient_id, concerns)
+        report = await self.invoke_with_history(chat_user_id, patient_id, concerns, prompts.recommend_subject_prompt, variables)
         return report.content
 
     async def consult_drug_safety(self, chat_user_id: int, patient_id: int, concerns: str) -> str:
@@ -62,7 +63,8 @@ class LLMService:
         Returns:
             str: A message indicating whether the new medication is safe to take, addressing the patient's concerns.
         """
-        report = await self.invoke_with_history(chat_user_id, patient_id, concerns, prompts.drug_safety_prompt)
+        variables = await self.init_variables(chat_user_id, patient_id, concerns)
+        report = await self.invoke_with_history(chat_user_id, patient_id, concerns, prompts.drug_safety_prompt, variables)
         return report.content
 
     async def consult_symptoms_and_guidance(self, chat_user_id: int, patient_id: int, concerns: str) -> str:
@@ -78,16 +80,34 @@ class LLMService:
         Returns:
             str: A message advising whether the symptoms warrant a hospital visit or can be monitored safely, addressing the patient's concerns.
         """
-        report = await self.invoke_with_history(chat_user_id, patient_id, concerns, prompts.symptoms_guidance_prompt)
+        variables = await self.init_variables(chat_user_id, patient_id, concerns)
+        report = await self.invoke_with_history(chat_user_id, patient_id, concerns, prompts.symptoms_guidance_prompt, variables)
+        return report.content
+
+    async def consult_food(self, chat_user_id: int, patient_id: int, concerns: str) -> str:
+        """
+        Resolve the patient's food-related concerns based on their blood sugar, blood pressure, medication list, and food history.
+
+        Parameters:
+            chat_user_id(int): ID of the user talking to the chatbot
+            patient_id(int): The ID of the user who is the subject of health counseling. Used to query blood sugar, blood pressure, and medication information in the database
+            concerns (str): A description of the patient's food-related concerns.   
+
+        Returns:
+            str: A message about the patient's food-related concerns and the solution.
+        """
+        variables = await self.init_variables_with_food(chat_user_id, patient_id, concerns)
+        report = await self.invoke_with_history(chat_user_id, patient_id, concerns, prompts.consult_food_prompt, variables)
         return report.content
 
     async def consult_general(self, chat_user_id: int, patient_id: int, concerns: str) -> str:
-        report = await self.invoke_with_history(chat_user_id, patient_id, concerns, prompts.consult_general_prompt)
+        variables = await self.init_variables(chat_user_id, patient_id, concerns)
+        report = await self.invoke_with_history(chat_user_id, patient_id, concerns, prompts.consult_general_prompt, variables)
         return report.content
 
-
     async def route_prompt(self, chat_user_id: int, patient_id: int, concerns: str) -> Callable:
-        funcs = [self.consult_drug_safety, self.consult_medical_department, self.consult_symptoms_and_guidance, self.consult_general]
+        funcs = [self.consult_drug_safety, self.consult_medical_department, self.consult_symptoms_and_guidance,
+                 self.consult_general, self.consult_food]
         funcs_info = "\n".join([get_function_info(f) for f in funcs])
         function_map = {f.__name__: f for f in funcs}
         prompt = PromptTemplate(
@@ -104,14 +124,31 @@ class LLMService:
         func = await self.route_prompt(chat_user_id, patient_id, concerns)
         return await func(chat_user_id, patient_id, concerns)
 
+    async def init_variables(self, chat_user_id: int, patient_id: int, concerns: str, current: datetime = datetime.now()) -> dict:
+        medicine_prompt, blood_sugar_prompt = get_user_data(patient_id)
+        current_time = current.strftime("%Y-%m-%d %H:%M:%S")
+        return {
+            "medicine": medicine_prompt,
+            "blood_sugar": blood_sugar_prompt,
+            "blood_pressure": "",
+            "current_time": current_time,
+            "problem": concerns,
+        }
+
+    async def init_variables_with_food(self, chat_user_id: int, patient_id: int, concerns: str, current: datetime = datetime.now()) -> dict:
+        variables = await self.init_variables(chat_user_id, patient_id, concerns, current)
+        food_prompt = await db.get_food(patient_id)
+        gi_prompt = await db.get_gi(patient_id)
+        variables["food"] = food_prompt
+        variables["gi"] = gi_prompt
+        return variables
+
     async def invoke_with_history(self, chat_user_id: int, patient_id: int, concerns: str, template: str,
-                                  current: datetime = datetime.now()) -> str:
-        medicine_prompt, blood_sugar_prompt = await get_user_data(patient_id)
+                                  variables: dict) -> str:
         prompt = ChatPromptTemplate.from_messages([
             ("system", template)
         ])
         chain = prompt | self.llm
-        current_date = current.strftime("%Y-%m-%d %H:%M-%S")
         chat_with_history = RunnableWithMessageHistory(
             chain,
             self.history_factory.get_history,
@@ -137,14 +174,8 @@ class LLMService:
             ],
         )
         result = chat_with_history.invoke(
-            {
-                "problem": concerns,
-                "blood_sugar": blood_sugar_prompt,
-                "blood_pressure": "",
-                "medicine": medicine_prompt,
-                "current_time": current_date,
-            },
-            config={"configurable" : {"user_id": chat_user_id, "target_id": patient_id}},
+            variables,
+            config={"configurable": {"user_id": chat_user_id, "target_id": patient_id}},
         )
         return result
 
