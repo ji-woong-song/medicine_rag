@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from starlette.responses import JSONResponse
 
-from dto import UserConsultRequest, HistoryDeleteRequest
+from dto import UserConsultRequest
 from services import llm_service
 
 app = FastAPI()
@@ -27,7 +27,3 @@ async def general_consult(req: UserConsultRequest):
     content = await llm_service.general_consult(req.chat_user_id, req.target_id, req.concern)
     return JSONResponse(content={"response": content})
 
-@app.post("/delete-history")
-async def delete_history(req: HistoryDeleteRequest):
-    llm_service.clear_history(req.chat_user_id, req.target_id)
-    return JSONResponse(content={"response": True})
