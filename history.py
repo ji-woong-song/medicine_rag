@@ -11,4 +11,7 @@ class HistoryStore:
             print("create new history : ", user_id, target_id)
             self.store[(user_id, target_id)] = ChatMessageHistory()
         return self.store[(user_id, target_id)]
-    
+
+    def clear_history(self, user_id, target_id):
+        if (user_id, target_id) in self.store:
+            del self.store[(user_id, target_id)]

@@ -148,5 +148,8 @@ class LLMService:
         )
         return result
 
+    def clear_history(self, chat_user_id: int, patient_id: int) -> None:
+        self.history_factory.clear_history(chat_user_id, patient_id)
+
 
 llm_service = LLMService()

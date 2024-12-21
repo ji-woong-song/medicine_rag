@@ -7,3 +7,6 @@ class UserConsultRequest(BaseModel):
     concern: str
 
 
+class HistoryDeleteRequest(BaseModel):
+    chat_user_id: int
+    target_id: int
