@@ -26,3 +26,23 @@ def table_blood_sugar(infos: list[str,int, datetime.date]) -> str:
         value = info['measure_value']
         content += row_format(date, value)
     return content
+
+
+def table_food(infos: list[str,str, datetime.date]) -> str:
+    content = ""
+    for info in infos:
+        date = info['measure_data'].strftime("%Y-%m-%d %H:%M")
+        # name = info['measure_type']
+        value = info['measure_value']
+        content += row_format(date, value)
+    return content
+
+
+def table_gi(infos: list[str,int]) -> str:
+    content = ""
+    for info in infos:
+        name = info['name']
+        value = info['value']
+        content += row_format(name, value)
+    return content
+
