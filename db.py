@@ -22,9 +22,9 @@ async def get_medicine(user_id: int):
         mb.registration_date AS start_date,
         mb.end_date AS end_date
         FROM 
-            medicine.medicine_bag mb
+            medicine_bag mb
         JOIN 
-            medicine.medicine_input mi ON mb.medicine_bag_id = mi.medicine_bag_id
+            medicine_input mi ON mb.medicine_bag_id = mi.medicine_bag_id
         WHERE 
             mb.user_id = %s 
             AND mb.registration_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND CURDATE();
@@ -51,7 +51,7 @@ async def get_blood_sugur(user_id: int):
             h.key_value AS measure_value,
             h.registration_date AS measure_date
         FROM
-            medicine.healthcare h
+            healthcare h
         WHERE
             h.user_id = %s
             AND h.registration_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND CURDATE()
@@ -72,7 +72,7 @@ async def get_blood_pressure(user_id: int):
                h.key_value AS measure_value,
                h.registration_date AS measure_date
            FROM
-               medicine.healthcare h
+               healthcare h
            WHERE
                h.user_id = %s
                AND h.registration_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND CURDATE()
