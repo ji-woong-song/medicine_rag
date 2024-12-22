@@ -76,7 +76,7 @@ async def get_blood_pressure(user_id: int):
            WHERE
                h.user_id = %s
                AND h.registration_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND CURDATE()
-               AND h.type = 'bloodpressure';
+               AND h.type = 'bloodpresure';
        """
     async with conn.cursor() as cur:
         await cur.execute(sql, user_id)
