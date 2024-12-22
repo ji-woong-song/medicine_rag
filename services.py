@@ -110,12 +110,13 @@ class LLMService:
                  self.consult_general, self.consult_food]
         funcs_info = "\n".join([get_function_info(f) for f in funcs])
         function_map = {f.__name__: f for f in funcs}
+        history = self.history_factory.get_history(chat_user_id, patient_id)
         prompt = PromptTemplate(
             input_variables=["problem"],
             template=prompts.router_prompt
         )
         response = self.llm.invoke(
-            prompt.format(problem=concerns, funcs_info=funcs_info)
+            prompt.format(problem=concerns, funcs_info=funcs_info, history=history.messages)
         )
         content = response.content
         return function_map[f"{content}"]
