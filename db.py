@@ -63,25 +63,34 @@ async def get_blood_sugur(user_id: int):
         info = [{'measure_type': item[0], 'measure_value': item[1], 'measure_data': item[2]} for item in items]
         return info
 
-
 async def get_blood_pressure(user_id: int):
     conn = await get_connection()
     sql = """
-           SELECT
-               h.key_name AS measure_type,
-               h.key_value AS measure_value,
-               h.registration_date AS measure_date
-           FROM
-               healthcare h
-           WHERE
-               h.user_id = %s
-               AND h.registration_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND CURDATE()
-               AND h.type = 'bloodpresure';
+           SELECT 
+               h1.key_value AS high_pressure,
+               h2.key_value AS low_pressure,
+               h1.registration_date AS measure_date
+           FROM 
+               healthcare h1
+           JOIN 
+               healthcare h2 
+           ON 
+               h1.registration_date = h2.registration_date
+               AND h1.user_id = h2.user_id
+           WHERE 
+               h1.user_id = %s
+               AND h1.registration_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND CURDATE()
+               AND h1.type = 'bloodpresure'
+               AND h2.type = 'bloodpresure'
+               AND h1.key_name = 'highpressure'
+               AND h2.key_name = 'lowpressure'
+           ORDER BY
+               h1.registration_date DESC;
        """
     async with conn.cursor() as cur:
         await cur.execute(sql, user_id)
         items = await cur.fetchall()
-        info = [{'measure_type': item[0], 'measure_value': item[1], 'measure_data': item[2]} for item in items]
+        info = [{'high_pressure': item[0], 'low_pressure': item[1], 'measure_date': item[2]} for item in items]
         return info
 
 

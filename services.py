@@ -18,7 +18,9 @@ async def get_user_data(patient_id: int) -> [str, str]:
     medicine_prompt = format.table_medicine(medicine_data)
     blood_sugar = await db.get_blood_sugur(patient_id)
     blood_sugar_prompt = format.table_blood_sugar(blood_sugar)
-    return medicine_prompt, blood_sugar_prompt
+    blood_pressure = await db.get_blood_pressure(patient_id)
+    blood_pressure_prompt = format.table_blood_pressure(blood_pressure)
+    return medicine_prompt, blood_sugar_prompt, blood_pressure_prompt
 
 
 def get_function_info(func: Callable) -> str:
@@ -126,12 +128,12 @@ class LLMService:
         return await func(chat_user_id, patient_id, concerns)
 
     async def init_variables(self, chat_user_id: int, patient_id: int, concerns: str, current: datetime = datetime.now()) -> dict:
-        medicine_prompt, blood_sugar_prompt = await get_user_data(patient_id)
+        medicine_prompt, blood_sugar_prompt, blood_pressure_prompt = await get_user_data(patient_id)
         current_time = current.strftime("%Y-%m-%d %H:%M:%S")
         return {
             "medicine": medicine_prompt,
             "blood_sugar": blood_sugar_prompt,
-            "blood_pressure": "",
+            "blood_pressure": blood_pressure_prompt,
             "current_time": current_time,
             "problem": concerns,
         }
