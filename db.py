@@ -27,7 +27,6 @@ async def get_medicine(user_id: int):
             medicine_input mi ON mb.medicine_bag_id = mi.medicine_bag_id
         WHERE 
             mb.user_id = %s 
-            AND mb.registration_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND CURDATE();
     """
     async with conn.cursor() as cur:
         await cur.execute(sql, user_id)
@@ -54,7 +53,6 @@ async def get_blood_sugur(user_id: int):
             healthcare h
         WHERE
             h.user_id = %s
-            AND h.registration_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND CURDATE()
             AND h.type = 'bloodsugar';
     """
     async with conn.cursor() as cur:
@@ -79,7 +77,6 @@ async def get_blood_pressure(user_id: int):
                AND h1.user_id = h2.user_id
            WHERE 
                h1.user_id = %s
-               AND h1.registration_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND CURDATE()
                AND h1.type = 'bloodpresure'
                AND h2.type = 'bloodpresure'
                AND h1.key_name = 'highpressure'
@@ -105,7 +102,6 @@ async def get_food(user_id: int):
             healthcare h
         WHERE
             h.user_id = %s
-            AND h.registration_date BETWEEN DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND CURDATE()
             AND h.type = 'meal';
     """
     async with conn.cursor() as cur:
