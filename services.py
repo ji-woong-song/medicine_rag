@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+import datetime
 from typing import Callable
 
 from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
@@ -13,12 +13,12 @@ from config import OPEN_AI_KEY
 from history import HistoryStore
 
 
-async def get_user_data(patient_id: int) -> [str, str]:
-    medicine_data = await db.get_medicine(patient_id)
+async def get_user_data(patient_id: int, start_date: datetime.datetime, end_date: datetime.datetime) -> [str, str, str]:
+    medicine_data = await db.get_medicine(patient_id, start_date, end_date)
     medicine_prompt = format.table_medicine(medicine_data)
-    blood_sugar = await db.get_blood_sugur(patient_id)
+    blood_sugar = await db.get_blood_sugur(patient_id, start_date, end_date)
     blood_sugar_prompt = format.table_blood_sugar(blood_sugar)
-    blood_pressure = await db.get_blood_pressure(patient_id)
+    blood_pressure = await db.get_blood_pressure(patient_id, start_date, end_date)
     blood_pressure_prompt = format.table_blood_pressure(blood_pressure)
     return medicine_prompt, blood_sugar_prompt, blood_pressure_prompt
 
@@ -48,8 +48,11 @@ class LLMService:
         Returns:
             str: The names of recommended medical department with simple explanation and advice for accurate consultation with a doctor
         """
-        variables = await self.init_variables(chat_user_id, patient_id, concerns)
-        report = await self.invoke_with_history(chat_user_id, patient_id, concerns, prompts.recommend_subject_prompt, variables)
+        start_date = datetime.datetime.now() - datetime.timedelta(days=90)
+        end_date = datetime.datetime.now()
+        variables = await self.init_variables(chat_user_id, patient_id, concerns, start_date, end_date)
+        report = await self.invoke_with_history(chat_user_id, patient_id, concerns, prompts.recommend_subject_prompt,
+                                                variables)
         return report.content
 
     async def consult_drug_safety(self, chat_user_id: int, patient_id: int, concerns: str) -> str:
@@ -65,8 +68,11 @@ class LLMService:
         Returns:
             str: A message indicating whether the new medication is safe to take, addressing the patient's concerns.
         """
-        variables = await self.init_variables(chat_user_id, patient_id, concerns)
-        report = await self.invoke_with_history(chat_user_id, patient_id, concerns, prompts.drug_safety_prompt, variables)
+        start_date = datetime.datetime.now() - datetime.timedelta(days=90)
+        end_date = datetime.datetime.now()
+        variables = await self.init_variables(chat_user_id, patient_id, concerns, start_date, end_date)
+        report = await self.invoke_with_history(chat_user_id, patient_id, concerns, prompts.drug_safety_prompt,
+                                                variables)
         return report.content
 
     async def consult_symptoms_and_guidance(self, chat_user_id: int, patient_id: int, concerns: str) -> str:
@@ -82,8 +88,11 @@ class LLMService:
         Returns:
             str: A message advising whether the symptoms warrant a hospital visit or can be monitored safely, addressing the patient's concerns.
         """
-        variables = await self.init_variables(chat_user_id, patient_id, concerns)
-        report = await self.invoke_with_history(chat_user_id, patient_id, concerns, prompts.symptoms_guidance_prompt, variables)
+        start_date = datetime.datetime.now() - datetime.timedelta(days=90)
+        end_date = datetime.datetime.now()
+        variables = await self.init_variables(chat_user_id, patient_id, concerns, start_date, end_date)
+        report = await self.invoke_with_history(chat_user_id, patient_id, concerns, prompts.symptoms_guidance_prompt,
+                                                variables)
         return report.content
 
     async def consult_food(self, chat_user_id: int, patient_id: int, concerns: str) -> str:
@@ -98,13 +107,19 @@ class LLMService:
         Returns:
             str: A message about the patient's food-related concerns and the solution.
         """
-        variables = await self.init_variables_with_food(chat_user_id, patient_id, concerns)
-        report = await self.invoke_with_history(chat_user_id, patient_id, concerns, prompts.consult_food_prompt, variables)
+        start_date = datetime.datetime.now() - datetime.timedelta(days=90)
+        end_date = datetime.datetime.now()
+        variables = await self.init_variables_with_food(chat_user_id, patient_id, concerns, start_date, end_date)
+        report = await self.invoke_with_history(chat_user_id, patient_id, concerns, prompts.consult_food_prompt,
+                                                variables)
         return report.content
 
     async def consult_general(self, chat_user_id: int, patient_id: int, concerns: str) -> str:
-        variables = await self.init_variables(chat_user_id, patient_id, concerns)
-        report = await self.invoke_with_history(chat_user_id, patient_id, concerns, prompts.consult_general_prompt, variables)
+        start_date = datetime.datetime.now() - datetime.timedelta(days=90)
+        end_date = datetime.datetime.now()
+        variables = await self.init_variables(chat_user_id, patient_id, concerns, start_date, end_date)
+        report = await self.invoke_with_history(chat_user_id, patient_id, concerns, prompts.consult_general_prompt,
+                                                variables)
         return report.content
 
     async def route_prompt(self, chat_user_id: int, patient_id: int, concerns: str) -> Callable:
@@ -127,8 +142,10 @@ class LLMService:
         func = await self.route_prompt(chat_user_id, patient_id, concerns)
         return await func(chat_user_id, patient_id, concerns)
 
-    async def init_variables(self, chat_user_id: int, patient_id: int, concerns: str, current: datetime = datetime.now()) -> dict:
-        medicine_prompt, blood_sugar_prompt, blood_pressure_prompt = await get_user_data(patient_id)
+    async def init_variables(self, chat_user_id: int, patient_id: int, concerns: str, start_date: datetime.datetime,
+                             end_date: datetime.datetime, current: datetime = datetime.datetime.now()) -> dict:
+        medicine_prompt, blood_sugar_prompt, blood_pressure_prompt = await get_user_data(patient_id, start_date,
+                                                                                         end_date)
         current_time = current.strftime("%Y-%m-%d %H:%M:%S")
         return {
             "medicine": medicine_prompt,
@@ -138,11 +155,13 @@ class LLMService:
             "problem": concerns,
         }
 
-    async def init_variables_with_food(self, chat_user_id: int, patient_id: int, concerns: str, current: datetime = datetime.now()) -> dict:
-        variables = await self.init_variables(chat_user_id, patient_id, concerns, current)
-        food = await db.get_food(patient_id)
+    async def init_variables_with_food(self, chat_user_id: int, patient_id: int, concerns: str,
+                                       start_date: datetime.datetime, end_date: datetime.datetime,
+                                       current: datetime = datetime.datetime.now()) -> dict:
+        variables = await self.init_variables(chat_user_id, patient_id, concerns, start_date, end_date, current)
+        food = await db.get_food(patient_id, start_date, end_date)
         food_prompt = format.table_food(food)
-        gi = await db.get_gi(patient_id)
+        gi = await db.get_gi()
         gi_prompt = format.table_gi(gi)
         variables["food"] = food_prompt
         variables["gi"] = gi_prompt

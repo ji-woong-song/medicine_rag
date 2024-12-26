@@ -1,3 +1,4 @@
+import datetime
 import aiomysql
 
 import config
@@ -13,7 +14,7 @@ async def get_connection():
     )
 
 
-async def get_medicine(user_id: int):
+async def get_medicine(user_id: int, start_date: datetime.datetime, end_date: datetime.datetime):
     conn = await get_connection()
 
     sql = """
@@ -26,10 +27,11 @@ async def get_medicine(user_id: int):
         JOIN 
             medicine_input mi ON mb.medicine_bag_id = mi.medicine_bag_id
         WHERE 
-            mb.user_id = %s 
+            mb.user_id = %s
+            AND mb.registration_date BETWEEN %s AND %s
     """
     async with conn.cursor() as cur:
-        await cur.execute(sql, user_id)
+        await cur.execute(sql, user_id, start_date.strftime("%Y-%m-%d %H:%M:%S"), end_date.strftime("%Y-%m-%d %H:%M:%S"))
         items = await cur.fetchall()
         info = [
             {
@@ -42,7 +44,7 @@ async def get_medicine(user_id: int):
         return info
 
 
-async def get_blood_sugur(user_id: int):
+async def get_blood_sugur(user_id: int, start_date: datetime.datetime, end_date: datetime.datetime):
     conn = await get_connection()
     sql = """
         SELECT
@@ -53,15 +55,16 @@ async def get_blood_sugur(user_id: int):
             healthcare h
         WHERE
             h.user_id = %s
-            AND h.type = 'bloodsugar';
+            AND h.type = 'bloodsugar'
+            AND h.registration_date BETWEEN %s AND %s;
     """
     async with conn.cursor() as cur:
-        await cur.execute(sql, user_id)
+        await cur.execute(sql, user_id, start_date.strftime("%Y-%m-%d %H:%M:%S"), end_date.strftime("%Y-%m-%d %H:%M:%S"))
         items = await cur.fetchall()
         info = [{'measure_type': item[0], 'measure_value': item[1], 'measure_data': item[2]} for item in items]
         return info
 
-async def get_blood_pressure(user_id: int):
+async def get_blood_pressure(user_id: int, start_date: datetime.datetime, end_date: datetime.datetime):
     conn = await get_connection()
     sql = """
            SELECT 
@@ -81,17 +84,18 @@ async def get_blood_pressure(user_id: int):
                AND h2.type = 'bloodpresure'
                AND h1.key_name = 'highpressure'
                AND h2.key_name = 'lowpressure'
+               AND h1.registration_date BETWEEN %s AND %s
            ORDER BY
                h1.registration_date DESC;
        """
     async with conn.cursor() as cur:
-        await cur.execute(sql, user_id)
+        await cur.execute(sql, user_id, start_date.strftime("%Y-%m-%d %H:%M:%S"), end_date.strftime("%Y-%m-%d %H:%M:%S"))
         items = await cur.fetchall()
         info = [{'high_pressure': item[0], 'low_pressure': item[1], 'measure_date': item[2]} for item in items]
         return info
 
 
-async def get_food(user_id: int):
+async def get_food(user_id: int, start_date: datetime.datetime, end_date: datetime.datetime):
     conn = await get_connection()
     sql = """
         SELECT
@@ -102,16 +106,17 @@ async def get_food(user_id: int):
             healthcare h
         WHERE
             h.user_id = %s
-            AND h.type = 'meal';
+            AND h.type = 'meal'
+            AND h.registration_date BETWEEN %s AND %s;
     """
     async with conn.cursor() as cur:
-        await cur.execute(sql, user_id)
+        await cur.execute(sql, user_id, start_date.strftime("%Y-%m-%d %H:%M:%S"), end_date.strftime("%Y-%m-%d %H:%M:%S"))
         items = await cur.fetchall()
         info = [{'measure_type': item[0], 'measure_value': item[1], 'measure_data': item[2]} for item in items]
         return info
 
 
-async def get_gi(user_id: int):
+async def get_gi():
     conn = await get_connection()
     sql = """
         SELECT
