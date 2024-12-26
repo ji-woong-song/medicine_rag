@@ -27,6 +27,14 @@ def table_blood_sugar(infos: list[str,int, datetime.date]) -> str:
         content += row_format(date, value)
     return content
 
+def table_blood_pressure(infos: list[str,int, datetime.date]) -> str:
+    content = ""
+    for info in infos:
+        date = info['measure_date'].strftime("%Y-%m-%d %H:%M")
+        high_value = info['high_pressure']
+        low_value = info['low_pressure']
+        content += row_format(high_value, low_value, date)
+    return content
 
 def table_food(infos: list[str,str, datetime.date]) -> str:
     content = ""

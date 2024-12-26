@@ -18,7 +18,9 @@ async def get_user_data(patient_id: int) -> [str, str]:
     medicine_prompt = format.table_medicine(medicine_data)
     blood_sugar = await db.get_blood_sugur(patient_id)
     blood_sugar_prompt = format.table_blood_sugar(blood_sugar)
-    return medicine_prompt, blood_sugar_prompt
+    blood_pressure = await db.get_blood_pressure(patient_id)
+    blood_pressure_prompt = format.table_blood_pressure(blood_pressure)
+    return medicine_prompt, blood_sugar_prompt, blood_pressure_prompt
 
 
 def get_function_info(func: Callable) -> str:
@@ -110,12 +112,13 @@ class LLMService:
                  self.consult_general, self.consult_food]
         funcs_info = "\n".join([get_function_info(f) for f in funcs])
         function_map = {f.__name__: f for f in funcs}
+        history = self.history_factory.get_history(chat_user_id, patient_id)
         prompt = PromptTemplate(
             input_variables=["problem"],
             template=prompts.router_prompt
         )
         response = self.llm.invoke(
-            prompt.format(problem=concerns, funcs_info=funcs_info)
+            prompt.format(problem=concerns, funcs_info=funcs_info, history=history.messages)
         )
         content = response.content
         return function_map[f"{content}"]
@@ -125,20 +128,22 @@ class LLMService:
         return await func(chat_user_id, patient_id, concerns)
 
     async def init_variables(self, chat_user_id: int, patient_id: int, concerns: str, current: datetime = datetime.now()) -> dict:
-        medicine_prompt, blood_sugar_prompt = get_user_data(patient_id)
+        medicine_prompt, blood_sugar_prompt, blood_pressure_prompt = await get_user_data(patient_id)
         current_time = current.strftime("%Y-%m-%d %H:%M:%S")
         return {
             "medicine": medicine_prompt,
             "blood_sugar": blood_sugar_prompt,
-            "blood_pressure": "",
+            "blood_pressure": blood_pressure_prompt,
             "current_time": current_time,
             "problem": concerns,
         }
 
     async def init_variables_with_food(self, chat_user_id: int, patient_id: int, concerns: str, current: datetime = datetime.now()) -> dict:
         variables = await self.init_variables(chat_user_id, patient_id, concerns, current)
-        food_prompt = await db.get_food(patient_id)
-        gi_prompt = await db.get_gi(patient_id)
+        food = await db.get_food(patient_id)
+        food_prompt = format.table_food(food)
+        gi = await db.get_gi(patient_id)
+        gi_prompt = format.table_gi(gi)
         variables["food"] = food_prompt
         variables["gi"] = gi_prompt
         return variables
