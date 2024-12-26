@@ -1,0 +1,1 @@
+docker build -t shortboy7/silver-llm:latest . && docker push shortboy7/silver-llm:latest

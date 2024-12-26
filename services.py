@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Callable
 
 from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
@@ -127,9 +127,11 @@ class LLMService:
         func = await self.route_prompt(chat_user_id, patient_id, concerns)
         return await func(chat_user_id, patient_id, concerns)
 
-    async def init_variables(self, chat_user_id: int, patient_id: int, concerns: str, current: datetime = datetime.now()) -> dict:
+    # seoul timezone
+    async def init_variables(self, chat_user_id: int, patient_id: int, concerns: str, current: datetime = datetime.now(timezone(timedelta(hours=9)))) -> dict:
         medicine_prompt, blood_sugar_prompt, blood_pressure_prompt = await get_user_data(patient_id)
         current_time = current.strftime("%Y-%m-%d %H:%M:%S")
+        print(current_time)
         return {
             "medicine": medicine_prompt,
             "blood_sugar": blood_sugar_prompt,
@@ -138,7 +140,7 @@ class LLMService:
             "problem": concerns,
         }
 
-    async def init_variables_with_food(self, chat_user_id: int, patient_id: int, concerns: str, current: datetime = datetime.now()) -> dict:
+    async def init_variables_with_food(self, chat_user_id: int, patient_id: int, concerns: str, current: datetime = datetime.now(timezone(timedelta(hours=9)))) -> dict:
         variables = await self.init_variables(chat_user_id, patient_id, concerns, current)
         food = await db.get_food(patient_id)
         food_prompt = format.table_food(food)
