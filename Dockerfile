@@ -10,10 +10,6 @@ COPY requirement.txt .
 # 패키지 설치
 RUN pip install --no-cache-dir -r requirement.txt
 
-# 타임존 설정
-ENV TZ=Asia/Seoul
-RUN apk add --no-cache tzdata
-
 # 애플리케이션 파일 복사 (medicine.py와 .env 파일 제외)
 COPY . .
 

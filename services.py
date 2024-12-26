@@ -1,3 +1,4 @@
+import copy
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Callable
@@ -5,12 +6,17 @@ from typing import Callable
 from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
 from langchain_core.runnables import RunnableWithMessageHistory, ConfigurableFieldSpec
 from langchain_openai import ChatOpenAI
+import pytz
 
 import db
 import format
 import prompts
 from config import OPEN_AI_KEY
 from history import HistoryStore
+
+def get_seoul_time():
+    seoul_tz = pytz.timezone('Asia/Seoul')
+    return datetime.now(seoul_tz)
 
 
 async def get_user_data(patient_id: int) -> [str, str]:
@@ -125,10 +131,11 @@ class LLMService:
 
     async def general_consult(self, chat_user_id: int, patient_id: int, concerns: str) -> str:
         func = await self.route_prompt(chat_user_id, patient_id, concerns)
+        print(func)
         return await func(chat_user_id, patient_id, concerns)
 
     # seoul timezone
-    async def init_variables(self, chat_user_id: int, patient_id: int, concerns: str, current: datetime = datetime.now(timezone(timedelta(hours=9)))) -> dict:
+    async def init_variables(self, chat_user_id: int, patient_id: int, concerns: str, current: datetime = get_seoul_time()) -> dict:
         medicine_prompt, blood_sugar_prompt, blood_pressure_prompt = await get_user_data(patient_id)
         current_time = current.strftime("%Y-%m-%d %H:%M:%S")
         print(current_time)
@@ -140,7 +147,7 @@ class LLMService:
             "problem": concerns,
         }
 
-    async def init_variables_with_food(self, chat_user_id: int, patient_id: int, concerns: str, current: datetime = datetime.now(timezone(timedelta(hours=9)))) -> dict:
+    async def init_variables_with_food(self, chat_user_id: int, patient_id: int, concerns: str, current: datetime = get_seoul_time()) -> dict:
         variables = await self.init_variables(chat_user_id, patient_id, concerns, current)
         food = await db.get_food(patient_id)
         food_prompt = format.table_food(food)
